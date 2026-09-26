@@ -127,7 +127,7 @@ DB를 사용하지 않는다.
 ```text
 Browser
 └── localStorage
-    └── airplanner-data
+    └── eta-data
 ```
 
 ### 장점
@@ -151,7 +151,7 @@ Browser
 예:
 
 ```text
-airplanner-backup-2026-09-26.json
+eta-backup-2026-09-26.json
 ```
 
 ### JSON 가져오기
@@ -1447,7 +1447,7 @@ calculateDuration(
 `lib/storage.ts`
 
 ```ts
-const STORAGE_KEY = "airplanner-data";
+const STORAGE_KEY = "eta-data";
 ```
 
 함수:
@@ -1608,7 +1608,7 @@ useAppData()
 GitHub Repository 생성:
 
 ```text
-airplanner
+eta
 ```
 
 Vercel에서 GitHub Repository 연결.

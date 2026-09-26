@@ -62,7 +62,7 @@ Browser
   ↓
 localStorage
   ↓
-airplanner-data
+eta-data
 ```
 
 데이터 백업이 필요한 경우 JSON으로 내보낼 수 있다.
@@ -70,7 +70,7 @@ airplanner-data
 ```text
 Export JSON
     ↓
-airplanner-backup-YYYY-MM-DD.json
+eta-backup-YYYY-MM-DD.json
 ```
 
 필요할 경우 다시 JSON을 가져올 수 있다.
