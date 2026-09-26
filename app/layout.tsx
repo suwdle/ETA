@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Plane } from "lucide-react";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { AppDataProvider } from "@/hooks/use-app-data";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,9 +31,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               </div>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-3xl flex-1 px-5 pb-28 pt-8 sm:px-8">
-            {children}
-          </main>
+          <AppDataProvider>
+            <main className="mx-auto w-full max-w-3xl flex-1 px-5 pb-28 pt-8 sm:px-8">
+              {children}
+            </main>
+          </AppDataProvider>
           <BottomNavigation />
         </div>
       </body>

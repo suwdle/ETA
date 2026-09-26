@@ -127,7 +127,7 @@ DB를 사용하지 않는다.
 ```text
 Browser
 └── localStorage
-    └── eta-data
+    └── airplanner-data
 ```
 
 ### 장점
@@ -1447,7 +1447,7 @@ calculateDuration(
 `lib/storage.ts`
 
 ```ts
-const STORAGE_KEY = "eta-data";
+const STORAGE_KEY = "airplanner-data";
 ```
 
 함수:

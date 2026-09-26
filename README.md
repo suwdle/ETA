@@ -62,7 +62,7 @@ Browser
   ↓
 localStorage
   ↓
-eta-data
+airplanner-data
 ```
 
 데이터 백업이 필요한 경우 JSON으로 내보낼 수 있다.
