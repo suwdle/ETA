@@ -66,6 +66,7 @@ export interface Event {
 
 export interface AppData {
   settings: UserSettings;
+  regularLeaveUsedDays: number;
   leaves: Leave[];
   rewardLeaves: RewardLeave[];
   performanceOvernights: PerformanceOvernight[];

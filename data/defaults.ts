@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
 export function createDefaultAppData(): AppData {
   return {
     settings: { ...DEFAULT_SETTINGS },
+    regularLeaveUsedDays: 0,
     leaves: [],
     rewardLeaves: [],
     performanceOvernights: [],

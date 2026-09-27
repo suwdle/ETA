@@ -165,9 +165,17 @@ function normalizeAppData(value: unknown): AppData {
     throw new Error("올바른 AirPlanner 데이터 형식이 아닙니다.");
   }
 
+  const leaves = readArray(value.leaves, "휴가", isLeave);
+  const regularLeaveUsedDays = isNonNegativeNumber(value.regularLeaveUsedDays)
+    ? value.regularLeaveUsedDays
+    : leaves
+        .filter((leave) => leave.category === "REGULAR")
+        .reduce((total, leave) => total + leave.usedDays, 0);
+
   return {
     settings: mergeSettings(value.settings),
-    leaves: readArray(value.leaves, "휴가", isLeave),
+    regularLeaveUsedDays,
+    leaves,
     rewardLeaves: readArray(value.rewardLeaves, "포상휴가", isRewardLeave),
     performanceOvernights: readArray(
       value.performanceOvernights,

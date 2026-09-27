@@ -8,8 +8,13 @@ import { isValidDateString } from "@/lib/discharge";
 export default function SettingsPage() {
   const { data, setData, isReady } = useAppData();
   const [dateError, setDateError] = useState("");
+  const [leaveError, setLeaveError] = useState("");
+  const [regularLeaveDays, setRegularLeaveDays] = useState<string | null>(null);
+  const [rewardLeaveLimit, setRewardLeaveLimit] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const { serviceStartDate = "", dischargeDate } = data.settings;
+  const regularLeaveDaysValue = regularLeaveDays ?? String(data.settings.regularLeaveDays);
+  const rewardLeaveLimitValue = rewardLeaveLimit ?? String(data.settings.rewardLeaveLimit);
 
   function updateDate(field: "serviceStartDate" | "dischargeDate", value: string) {
     if (value && !isValidDateString(value)) {
@@ -31,7 +36,39 @@ export default function SettingsPage() {
       setDateError("전역일을 올바르게 입력해 주세요.");
       return;
     }
+
+    const regularDays = Number(regularLeaveDaysValue);
+    const rewardLimit = Number(rewardLeaveLimitValue);
+    if (
+      !regularLeaveDaysValue.trim() ||
+      !rewardLeaveLimitValue.trim() ||
+      !Number.isFinite(regularDays) ||
+      !Number.isFinite(rewardLimit) ||
+      regularDays < data.regularLeaveUsedDays ||
+      regularDays < 0 ||
+      rewardLimit < 0
+    ) {
+      setLeaveError(
+        regularDays < data.regularLeaveUsedDays
+          ? "정기휴가 총일수는 이미 사용한 일수보다 작을 수 없습니다."
+          : "휴가 일수는 0 이상의 숫자로 입력해 주세요.",
+      );
+      return;
+    }
+
     setIsSaved(true);
+    setDateError("");
+    setLeaveError("");
+    setData((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        regularLeaveDays: regularDays,
+        rewardLeaveLimit: rewardLimit,
+      },
+    }));
+    setRegularLeaveDays(null);
+    setRewardLeaveLimit(null);
   }
 
   return (
@@ -87,6 +124,60 @@ export default function SettingsPage() {
             </p>
           )}
         </div>
+
+        <fieldset className="space-y-5 border-t border-border pt-5">
+          <legend className="text-base font-semibold">휴가 기준</legend>
+          <div className="space-y-2">
+            <label htmlFor="regularLeaveDays" className="text-sm font-medium">
+              정기휴가 총일수
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="regularLeaveDays"
+                name="regularLeaveDays"
+                type="number"
+                min={data.regularLeaveUsedDays}
+                step="0.5"
+                value={regularLeaveDaysValue}
+                disabled={!isReady}
+                onChange={(event) => {
+                  setRegularLeaveDays(event.target.value);
+                  setIsSaved(false);
+                }}
+                className="h-12 w-full rounded-md border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              />
+              <span className="text-sm text-muted-foreground">일</span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="rewardLeaveLimit" className="text-sm font-medium">
+              포상휴가 관리 한도
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="rewardLeaveLimit"
+                name="rewardLeaveLimit"
+                type="number"
+                min="0"
+                step="0.5"
+                value={rewardLeaveLimitValue}
+                disabled={!isReady}
+                onChange={(event) => {
+                  setRewardLeaveLimit(event.target.value);
+                  setIsSaved(false);
+                }}
+                className="h-12 w-full rounded-md border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              />
+              <span className="text-sm text-muted-foreground">일</span>
+            </div>
+            <p className="text-xs text-muted-foreground">실제 부여량을 제한하지 않는 관리용 기준값입니다.</p>
+          </div>
+          {leaveError && (
+            <p role="alert" className="text-sm text-destructive">
+              {leaveError}
+            </p>
+          )}
+        </fieldset>
 
         <div className="flex min-h-11 items-center gap-3">
           <button
