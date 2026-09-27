@@ -1,9 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { CalendarDays, Save } from "lucide-react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { format } from "date-fns";
+import { CalendarDays, Download, Save, Trash2, Upload } from "lucide-react";
+import { createDefaultAppData } from "@/data/defaults";
 import { useAppData } from "@/hooks/use-app-data";
 import { isValidDateString } from "@/lib/discharge";
+import {
+  clearAppData,
+  exportAppData,
+  importAppData,
+  parseAppDataBackup,
+} from "@/lib/storage";
 
 export default function SettingsPage() {
   const { data, setData, isReady } = useAppData();
@@ -16,6 +24,13 @@ export default function SettingsPage() {
   const [overnightNights, setOvernightNights] = useState<string | null>(null);
   const [overnightDays, setOvernightDays] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [backupError, setBackupError] = useState("");
+  const [backupStatus, setBackupStatus] = useState("");
+  const [pendingBackupJson, setPendingBackupJson] = useState<string | null>(null);
+  const [pendingBackupName, setPendingBackupName] = useState("");
+  const [confirmation, setConfirmation] = useState<"import" | "reset" | null>(null);
+  const [isReadingBackup, setIsReadingBackup] = useState(false);
+  const backupInputRef = useRef<HTMLInputElement>(null);
   const { serviceStartDate = "", dischargeDate } = data.settings;
   const regularLeaveDaysValue = regularLeaveDays ?? String(data.settings.regularLeaveDays);
   const rewardLeaveLimitValue = rewardLeaveLimit ?? String(data.settings.rewardLeaveLimit);
@@ -108,6 +123,72 @@ export default function SettingsPage() {
     setOvernightCycleWeeks(null);
     setOvernightNights(null);
     setOvernightDays(null);
+  }
+
+  function exportBackup() {
+    const backup = exportAppData(data);
+    const file = new Blob([backup], { type: "application/json" });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `airplanner-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setBackupError("");
+    setBackupStatus("백업 파일을 저장했습니다.");
+  }
+
+  async function selectBackup(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setBackupError("");
+    setBackupStatus("");
+    setIsReadingBackup(true);
+    try {
+      const contents = await file.text();
+      parseAppDataBackup(contents);
+      setPendingBackupJson(contents);
+      setPendingBackupName(file.name);
+      setConfirmation("import");
+    } catch {
+      setBackupError("올바른 AirPlanner 백업 파일이 아닙니다.");
+    } finally {
+      setIsReadingBackup(false);
+    }
+  }
+
+  function restoreBackup() {
+    if (!pendingBackupJson) return;
+    try {
+      const restoredData = importAppData(pendingBackupJson);
+      setData(restoredData);
+      setBackupStatus("백업 데이터를 복원했습니다.");
+      setBackupError("");
+      setConfirmation(null);
+      setPendingBackupJson(null);
+      setPendingBackupName("");
+    } catch {
+      setBackupError("올바른 AirPlanner 백업 파일이 아닙니다.");
+      setConfirmation(null);
+    }
+  }
+
+  function resetAllData() {
+    clearAppData();
+    setData(createDefaultAppData());
+    setConfirmation(null);
+    setPendingBackupJson(null);
+    setPendingBackupName("");
+    setBackupError("");
+    setBackupStatus("모든 데이터를 초기화했습니다.");
+  }
+
+  function cancelConfirmation() {
+    setConfirmation(null);
+    setPendingBackupJson(null);
+    setPendingBackupName("");
   }
 
   return (
@@ -300,6 +381,119 @@ export default function SettingsPage() {
           {isSaved && <p role="status" className="text-sm text-muted-foreground">저장했습니다.</p>}
         </div>
       </form>
+
+      <section aria-labelledby="backup-title" className="max-w-lg space-y-5 border-t border-border pt-6">
+        <div>
+          <h2 id="backup-title" className="font-semibold">데이터 관리</h2>
+          <p className="mt-1 text-sm text-muted-foreground">이 브라우저의 localStorage 데이터를 백업하거나 복원합니다.</p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-medium">데이터 백업</h3>
+              <p className="text-xs text-muted-foreground">현재 일정과 설정을 JSON 파일로 저장합니다.</p>
+            </div>
+            <button
+              type="button"
+              onClick={exportBackup}
+              disabled={!isReady}
+              className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+            >
+              <Download aria-hidden="true" className="size-4" /> JSON 파일로 저장
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <div>
+              <h3 className="text-sm font-medium">데이터 복원</h3>
+              <p className="text-xs text-muted-foreground">AirPlanner JSON 백업 파일을 선택합니다.</p>
+            </div>
+            <input
+              ref={backupInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={selectBackup}
+              className="sr-only"
+              aria-label="JSON 백업 파일 선택"
+            />
+            <button
+              type="button"
+              onClick={() => backupInputRef.current?.click()}
+              disabled={!isReady || isReadingBackup}
+              className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+            >
+              <Upload aria-hidden="true" className="size-4" />
+              {isReadingBackup ? "파일 확인 중" : "JSON 파일 선택"}
+            </button>
+          </div>
+        </div>
+
+        <div className="border-t border-destructive/30 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-medium">모든 데이터 삭제</h3>
+              <p className="text-xs text-muted-foreground">일정, 휴가 및 설정을 기본값으로 초기화합니다.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmation("reset")}
+              disabled={!isReady}
+              className="inline-flex min-h-10 items-center gap-2 rounded-md border border-destructive/40 px-3 text-sm font-medium text-destructive hover:bg-destructive/5 disabled:opacity-60"
+            >
+              <Trash2 aria-hidden="true" className="size-4" /> 전체 삭제
+            </button>
+          </div>
+        </div>
+
+        {backupError && <p role="alert" className="text-sm text-destructive">{backupError}</p>}
+        {backupStatus && <p role="status" className="text-sm text-muted-foreground">{backupStatus}</p>}
+      </section>
+
+      {confirmation && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-5">
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="data-confirmation-title"
+            className="w-full max-w-sm rounded-lg border border-border bg-background p-5 shadow-lg"
+          >
+            {confirmation === "import" ? (
+              <>
+                <h2 id="data-confirmation-title" className="font-semibold">데이터 복원</h2>
+                <p className="mt-3 text-sm">현재 데이터가 백업 데이터로 교체됩니다.</p>
+                <p className="mt-1 text-sm">계속하시겠습니까?</p>
+                <p className="mt-3 break-all text-xs text-muted-foreground">{pendingBackupName}</p>
+              </>
+            ) : (
+              <>
+                <h2 id="data-confirmation-title" className="font-semibold">모든 데이터를 삭제할까요?</h2>
+                <p className="mt-3 text-sm">모든 일정과 휴가 데이터가 삭제됩니다.</p>
+              </>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelConfirmation}
+                className="min-h-10 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={confirmation === "import" ? restoreBackup : resetAllData}
+                className={`min-h-10 rounded-md px-3 text-sm font-medium text-white ${
+                  confirmation === "import"
+                    ? "bg-primary hover:bg-primary/90"
+                    : "bg-destructive hover:bg-destructive/90"
+                }`}
+              >
+                {confirmation === "import" ? "복원" : "전체 삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

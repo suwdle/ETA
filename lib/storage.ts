@@ -158,6 +158,31 @@ function isEvent(value: unknown): value is Event {
   );
 }
 
+function isAppDataBackup(value: unknown): value is JsonObject {
+  if (!isObject(value) || !isObject(value.settings)) return false;
+
+  const settings = value.settings;
+  return (
+    isOptionalString(settings.serviceStartDate) &&
+    typeof settings.dischargeDate === "string" &&
+    isNonNegativeNumber(settings.regularLeaveDays) &&
+    isNonNegativeNumber(settings.rewardLeaveLimit) &&
+    isNonNegativeNumber(settings.performanceOvernightCycleWeeks) &&
+    isNonNegativeNumber(settings.performanceOvernightNights) &&
+    isNonNegativeNumber(settings.performanceOvernightDays) &&
+    isOptionalString(settings.performanceOvernightBaseDate) &&
+    isNonNegativeNumber(value.regularLeaveUsedDays) &&
+    Array.isArray(value.leaves) &&
+    value.leaves.every(isLeave) &&
+    Array.isArray(value.rewardLeaves) &&
+    value.rewardLeaves.every(isRewardLeave) &&
+    Array.isArray(value.performanceOvernights) &&
+    value.performanceOvernights.every(isPerformanceOvernight) &&
+    Array.isArray(value.events) &&
+    value.events.every(isEvent)
+  );
+}
+
 function readArray<T>(value: unknown, field: string, validator: Validator<T>): T[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || !value.every(validator)) {
@@ -221,20 +246,22 @@ export function clearAppData(): void {
   window.localStorage.removeItem(STORAGE_KEY);
 }
 
-export function exportAppData(): string {
-  return JSON.stringify(loadAppData(), null, 2);
+export function exportAppData(data?: AppData): string {
+  return JSON.stringify(data ?? loadAppData(), null, 2);
+}
+
+export function parseAppDataBackup(json: string): AppData {
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!isAppDataBackup(parsed)) throw new Error("Invalid backup structure");
+    return normalizeAppData(parsed);
+  } catch {
+    throw new Error("올바른 AirPlanner 백업 파일이 아닙니다.");
+  }
 }
 
 export function importAppData(json: string): AppData {
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(json) as unknown;
-  } catch {
-    throw new Error("올바른 JSON 백업 파일이 아닙니다.");
-  }
-
-  const appData = normalizeAppData(parsed);
+  const appData = parseAppDataBackup(json);
   saveAppData(appData);
   return appData;
 }
