@@ -133,7 +133,7 @@ export default function LeavePage() {
     }
     const overnight: PerformanceOvernight = {
       id: overnightId,
-      availableFrom: startDate,
+      availableFrom: nextOvernightDate,
       cycleWeeks: performanceOvernightCycleWeeks,
       durationNights: performanceOvernightNights,
       durationDays: performanceOvernightDays,
@@ -157,7 +157,10 @@ export default function LeavePage() {
 
     setData((current) => ({
       ...current,
-      settings: { ...current.settings, performanceOvernightBaseDate: startDate },
+      settings: {
+        ...current.settings,
+        performanceOvernightBaseDate: nextOvernightDate,
+      },
       performanceOvernights: [...current.performanceOvernights, overnight],
       events: [...current.events, overnightEvent],
     }));
@@ -454,7 +457,7 @@ export default function LeavePage() {
               return (
                 <li key={overnight.id} className="py-3">
                   <p className="text-sm font-medium">
-                    {overnight.used ? "사용" : "미사용"} · {formatDisplayDate(overnight.availableFrom)}
+                    {overnight.used ? "사용" : "미사용"} · 가능일 {formatDisplayDate(overnight.availableFrom)}
                   </p>
                   {linkedEvent && (
                     <p className="mt-1 text-sm text-muted-foreground">
