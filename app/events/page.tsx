@@ -157,15 +157,9 @@ export default function EventsPage() {
       ? data.events.find((event) => event.id === editingId)
       : undefined;
     const eventId = editingId ?? crypto.randomUUID();
-    const performanceDate = draft.usePerformanceOvernight ? nextPerformanceDate : null;
-    if (
-      draft.type === "OVERNIGHT" &&
-      draft.usePerformanceOvernight &&
-      (!performanceDate || draft.startDate < performanceDate)
-    ) {
-      setFormError("성과제외박 가능일 이후 날짜를 선택해 주세요.");
-      return;
-    }
+    const performanceDate = draft.usePerformanceOvernight
+      ? nextPerformanceDate ?? draft.startDate
+      : null;
 
     const overnightId = draft.type === "OVERNIGHT" && draft.usePerformanceOvernight
       ? currentEvent?.overnightId ?? crypto.randomUUID()
@@ -427,7 +421,7 @@ export default function EventsPage() {
                 <input
                   type="checkbox"
                   checked={draft.usePerformanceOvernight}
-                  disabled={!isReady || (!nextPerformanceDate && !editingId)}
+                  disabled={!isReady}
                   onChange={(event) => setDraft({ ...draft, usePerformanceOvernight: event.target.checked })}
                   className="size-4 accent-primary"
                 />

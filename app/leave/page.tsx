@@ -119,12 +119,8 @@ export default function LeavePage() {
   function savePerformanceOvernight(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const startDate = overnightDateValue;
-    if (
-      !nextOvernightDate ||
-      !isValidDateString(startDate) ||
-      startDate < nextOvernightDate
-    ) {
-      setOvernightError("다음 가능일 이후의 올바른 시작일을 입력해 주세요.");
+    if (!isValidDateString(startDate)) {
+      setOvernightError("올바른 시작일을 입력해 주세요.");
       return;
     }
 
@@ -144,7 +140,7 @@ export default function LeavePage() {
     }
     const overnight: PerformanceOvernight = {
       id: overnightId,
-      availableFrom: nextOvernightDate,
+      availableFrom: nextOvernightDate ?? startDate,
       cycleWeeks: performanceOvernightCycleWeeks,
       durationNights: performanceOvernightNights,
       durationDays: performanceOvernightDays,
@@ -170,7 +166,7 @@ export default function LeavePage() {
       ...current,
       settings: {
         ...current.settings,
-        performanceOvernightBaseDate: nextOvernightDate,
+        performanceOvernightBaseDate: nextOvernightDate ?? startDate,
       },
       performanceOvernights: [...current.performanceOvernights, overnight],
       events: [...current.events, overnightEvent],
@@ -468,16 +464,15 @@ export default function LeavePage() {
               <input
                 id="overnightStartDate"
                 type="date"
-                min={nextOvernightDate ?? undefined}
                 value={overnightDateValue}
-                disabled={!isReady || !nextOvernightDate}
+                disabled={!isReady}
                 onChange={(event) => setOvernightDateInput(event.target.value)}
                 className={inputClassName}
               />
             </label>
             <button
               type="submit"
-              disabled={!isReady || !nextOvernightDate}
+              disabled={!isReady}
               className="min-h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
             >
               일정 등록 및 사용 처리
