@@ -92,12 +92,23 @@ export default function LeavePage() {
       total + calculateRemainingLeave(leave.grantedDays, leave.usedDays),
     0,
   );
+  const regularEventUsage = data.events
+    .filter(
+      (event) =>
+        event.type === "LEAVE" &&
+        event.status !== "REJECTED" &&
+        (event.leaveType === "REGULAR" ||
+          (!event.leaveType &&
+            event.leaveId &&
+            data.leaves.some((leave) => leave.id === event.leaveId && leave.category === "REGULAR"))),
+    )
+    .reduce((total, event) => total + (event.leaveDays ?? 0), 0);
 
   function saveRegularUsage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const usedDays = parseDays(regularUsageValue);
-    if (usedDays === undefined || usedDays > data.settings.regularLeaveDays) {
-      setRegularError("사용일수는 0 이상이며 정기휴가 총일수를 넘을 수 없습니다.");
+    if (usedDays === undefined || usedDays < regularEventUsage || usedDays > data.settings.regularLeaveDays) {
+      setRegularError("사용일수는 연결된 일정의 사용량 이상이며 정기휴가 총일수를 넘을 수 없습니다.");
       return;
     }
     setData((current) => ({ ...current, regularLeaveUsedDays: usedDays }));
@@ -172,11 +183,18 @@ export default function LeavePage() {
     event.preventDefault();
     const grantedDays = parseDays(rewardDraft.grantedDays);
     const usedDays = parseDays(rewardDraft.usedDays);
+    const linkedUsage = editingRewardId
+      ? data.events
+          .filter((event) => event.type === "LEAVE" && event.status !== "REJECTED" && event.rewardLeaveId === editingRewardId)
+          .reduce((total, event) => total + (event.leaveDays ?? 0), 0)
+      : 0;
     if (
       !rewardDraft.name.trim() ||
       grantedDays === undefined ||
       usedDays === undefined ||
       usedDays > grantedDays ||
+      usedDays < linkedUsage ||
+      grantedDays < linkedUsage ||
       !rewardDraft.grantedAt
     ) {
       setRewardError("포상명과 부여일을 입력하고, 사용일수는 부여일수를 넘지 않게 해 주세요.");
@@ -213,11 +231,18 @@ export default function LeavePage() {
     event.preventDefault();
     const grantedDays = parseDays(otherDraft.grantedDays);
     const usedDays = parseDays(otherDraft.usedDays);
+    const linkedUsage = editingOtherId
+      ? data.events
+          .filter((event) => event.type === "LEAVE" && event.status !== "REJECTED" && event.leaveId === editingOtherId)
+          .reduce((total, event) => total + (event.leaveDays ?? 0), 0)
+      : 0;
     if (
       !otherDraft.name.trim() ||
       grantedDays === undefined ||
       usedDays === undefined ||
       usedDays > grantedDays ||
+      usedDays < linkedUsage ||
+      grantedDays < linkedUsage ||
       !otherDraft.grantedAt
     ) {
       setOtherError("휴가명과 부여일을 입력하고, 사용일수는 부여일수를 넘지 않게 해 주세요.");
@@ -267,6 +292,10 @@ export default function LeavePage() {
 
   function removeReward(id: string) {
     if (!window.confirm("이 포상휴가를 삭제할까요?")) return;
+    if (data.events.some((event) => event.rewardLeaveId === id)) {
+      window.alert("일정에 연결된 포상휴가는 먼저 해당 일정을 수정하거나 삭제해 주세요.");
+      return;
+    }
     setData((current) => ({
       ...current,
       rewardLeaves: current.rewardLeaves.filter((leave) => leave.id !== id),
@@ -275,6 +304,10 @@ export default function LeavePage() {
 
   function removeOther(id: string) {
     if (!window.confirm("이 기타 휴가를 삭제할까요?")) return;
+    if (data.events.some((event) => event.leaveId === id)) {
+      window.alert("일정에 연결된 기타 휴가는 먼저 해당 일정을 수정하거나 삭제해 주세요.");
+      return;
+    }
     setData((current) => ({
       ...current,
       leaves: current.leaves.filter((leave) => leave.id !== id),

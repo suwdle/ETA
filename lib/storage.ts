@@ -142,6 +142,12 @@ function isEvent(value: unknown): value is Event {
     isEventStatus(value.status) &&
     typeof value.startDate === "string" &&
     typeof value.endDate === "string" &&
+    isOptionalString(value.startTime) &&
+    (value.leaveType === undefined ||
+      value.leaveType === "REGULAR" ||
+      value.leaveType === "REWARD" ||
+      value.leaveType === "OTHER") &&
+    (value.leaveDays === undefined || isNonNegativeNumber(value.leaveDays)) &&
     isOptionalString(value.leaveId) &&
     isOptionalString(value.rewardLeaveId) &&
     isOptionalString(value.overnightId) &&

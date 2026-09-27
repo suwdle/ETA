@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, House, Settings, Umbrella } from "lucide-react";
+import { CalendarDays, House, ListChecks, Settings, Umbrella } from "lucide-react";
 
 const navigationItems = [
   { href: "/", label: "홈", icon: House },
   { href: "/calendar", label: "캘린더", icon: CalendarDays },
+  { href: "/events", label: "일정", icon: ListChecks },
   { href: "/leave", label: "휴가", icon: Umbrella },
   { href: "/settings", label: "설정", icon: Settings },
 ] as const;
@@ -16,7 +17,7 @@ export function BottomNavigation() {
 
   return (
     <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-border/90 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-      <nav aria-label="주요 메뉴" className="mx-auto grid h-16 max-w-3xl grid-cols-4 px-2">
+      <nav aria-label="주요 메뉴" className="mx-auto grid h-16 max-w-3xl grid-cols-5 px-1 sm:px-2">
         {navigationItems.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 

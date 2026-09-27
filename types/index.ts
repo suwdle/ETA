@@ -47,6 +47,7 @@ export type EventType =
   | "PROPOSAL";
 
 export type EventStatus = "PROPOSED" | "REJECTED" | "CONFIRMED" | "COMPLETED";
+export type LeaveEventType = "REGULAR" | "REWARD" | "OTHER";
 
 export interface Event {
   id: string;
@@ -55,6 +56,9 @@ export interface Event {
   status: EventStatus;
   startDate: string;
   endDate: string;
+  startTime?: string;
+  leaveType?: LeaveEventType;
+  leaveDays?: number;
   leaveId?: string;
   rewardLeaveId?: string;
   overnightId?: string;
