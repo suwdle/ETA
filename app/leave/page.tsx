@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Gift, Pencil, Plus, Trash2, Umbrella, X } from "lucide-react";
+import { addDays, format, parseISO } from "date-fns";
+import { BedDouble, Gift, Pencil, Plus, Trash2, Umbrella, X } from "lucide-react";
 import { useAppData } from "@/hooks/use-app-data";
 import {
+  calculateNextPerformanceOvernight,
   calculateRemainingLeave,
   calculateRewardLeaveRemaining,
 } from "@/lib/leave";
-import type { Leave, RewardLeave } from "@/types";
+import { isValidDateString } from "@/lib/discharge";
+import type { Event, Leave, PerformanceOvernight, RewardLeave } from "@/types";
 
 type LeaveDraft = {
   name: string;
@@ -51,10 +54,18 @@ function formatDays(days: number): string {
   return `${days.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}일`;
 }
 
+function formatDisplayDate(dateString: string): string {
+  return isValidDateString(dateString)
+    ? format(parseISO(dateString), "yyyy.MM.dd")
+    : dateString;
+}
+
 export default function LeavePage() {
   const { data, setData, isReady } = useAppData();
   const [regularUsageInput, setRegularUsageInput] = useState<string | null>(null);
   const [regularError, setRegularError] = useState("");
+  const [overnightDateInput, setOvernightDateInput] = useState<string | null>(null);
+  const [overnightError, setOvernightError] = useState("");
   const [rewardDraft, setRewardDraft] = useState<LeaveDraft>(emptyDraft);
   const [rewardError, setRewardError] = useState("");
   const [editingRewardId, setEditingRewardId] = useState<string | null>(null);
@@ -65,6 +76,11 @@ export default function LeavePage() {
   const [isAddingOther, setIsAddingOther] = useState(false);
 
   const regularUsageValue = regularUsageInput ?? String(data.regularLeaveUsedDays);
+  const nextOvernightDate = calculateNextPerformanceOvernight(
+    data.settings.performanceOvernightBaseDate ?? "",
+    data.settings.performanceOvernightCycleWeeks,
+  );
+  const overnightDateValue = overnightDateInput ?? nextOvernightDate ?? "";
   const regularRemaining = calculateRemainingLeave(
     data.settings.regularLeaveDays,
     data.regularLeaveUsedDays,
@@ -87,6 +103,66 @@ export default function LeavePage() {
     setData((current) => ({ ...current, regularLeaveUsedDays: usedDays }));
     setRegularUsageInput(null);
     setRegularError("");
+  }
+
+  function savePerformanceOvernight(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const startDate = overnightDateValue;
+    if (
+      !nextOvernightDate ||
+      !isValidDateString(startDate) ||
+      startDate < nextOvernightDate
+    ) {
+      setOvernightError("다음 가능일 이후의 올바른 시작일을 입력해 주세요.");
+      return;
+    }
+
+    const overnightId = crypto.randomUUID();
+    const eventId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const { performanceOvernightCycleWeeks, performanceOvernightNights, performanceOvernightDays } =
+      data.settings;
+    if (
+      !Number.isInteger(performanceOvernightNights) ||
+      !Number.isInteger(performanceOvernightDays) ||
+      performanceOvernightNights < 1 ||
+      performanceOvernightDays < 1
+    ) {
+      setOvernightError("성과제외박 숙박 및 기간 설정을 확인해 주세요.");
+      return;
+    }
+    const overnight: PerformanceOvernight = {
+      id: overnightId,
+      availableFrom: startDate,
+      cycleWeeks: performanceOvernightCycleWeeks,
+      durationNights: performanceOvernightNights,
+      durationDays: performanceOvernightDays,
+      used: true,
+      eventId,
+    };
+    const overnightEvent: Event = {
+      id: eventId,
+      title: `성과제외박 ${performanceOvernightNights}박 ${performanceOvernightDays}일`,
+      type: "OVERNIGHT",
+      status: "CONFIRMED",
+      startDate,
+      endDate: format(
+        addDays(parseISO(startDate), performanceOvernightDays - 1),
+        "yyyy-MM-dd",
+      ),
+      overnightId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setData((current) => ({
+      ...current,
+      settings: { ...current.settings, performanceOvernightBaseDate: startDate },
+      performanceOvernights: [...current.performanceOvernights, overnight],
+      events: [...current.events, overnightEvent],
+    }));
+    setOvernightDateInput(null);
+    setOvernightError("");
   }
 
   function saveReward(event: FormEvent<HTMLFormElement>) {
@@ -331,6 +407,70 @@ export default function LeavePage() {
       </div>
 
       <div className="space-y-6">
+        <section aria-labelledby="overnight-title" className="border-t border-border pt-5">
+          <div className="flex items-center gap-3">
+            <BedDouble aria-hidden="true" className="size-5 text-primary" />
+            <div>
+              <h2 id="overnight-title" className="font-semibold">성과제외박</h2>
+              {nextOvernightDate ? (
+                <>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    다음 가능일 {formatDisplayDate(nextOvernightDate)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {data.settings.performanceOvernightNights}박 {data.settings.performanceOvernightDays}일 · {data.settings.performanceOvernightCycleWeeks}주 주기
+                  </p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">설정에서 기준일을 입력해 주세요.</p>
+              )}
+            </div>
+          </div>
+          <form onSubmit={savePerformanceOvernight} className="mt-4 flex flex-wrap items-end gap-3">
+            <label htmlFor="overnightStartDate" className="min-w-40 flex-1 space-y-2 text-sm font-medium">
+              일정 시작일
+              <input
+                id="overnightStartDate"
+                type="date"
+                min={nextOvernightDate ?? undefined}
+                value={overnightDateValue}
+                disabled={!isReady || !nextOvernightDate}
+                onChange={(event) => setOvernightDateInput(event.target.value)}
+                className={inputClassName}
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!isReady || !nextOvernightDate}
+              className="min-h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              일정 등록 및 사용 처리
+            </button>
+          </form>
+          {overnightError && <p role="alert" className="mt-2 text-sm text-destructive">{overnightError}</p>}
+          <ul className="mt-4 divide-y divide-border">
+            {data.performanceOvernights.map((overnight) => {
+              const linkedEvent = data.events.find((event) => event.id === overnight.eventId);
+              return (
+                <li key={overnight.id} className="py-3">
+                  <p className="text-sm font-medium">
+                    {overnight.used ? "사용" : "미사용"} · {formatDisplayDate(overnight.availableFrom)}
+                  </p>
+                  {linkedEvent && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      일정 연결 · {linkedEvent.title} ({formatDisplayDate(linkedEvent.startDate)}–{formatDisplayDate(linkedEvent.endDate)})
+                    </p>
+                  )}
+                  {overnight.memo && <p className="mt-1 text-sm text-muted-foreground">{overnight.memo}</p>}
+                </li>
+              );
+            })}
+            {data.performanceOvernights.length === 0 && (
+              <li className="py-5 text-center text-sm text-muted-foreground">등록된 사용 기록이 없습니다.</li>
+            )}
+          </ul>
+        </section>
+
         <section aria-labelledby="regular-title" className="border-t border-border pt-5">
           <div className="flex items-center gap-3">
             <Umbrella aria-hidden="true" className="size-5 text-primary" />

@@ -9,20 +9,34 @@ export default function SettingsPage() {
   const { data, setData, isReady } = useAppData();
   const [dateError, setDateError] = useState("");
   const [leaveError, setLeaveError] = useState("");
+  const [overnightError, setOvernightError] = useState("");
   const [regularLeaveDays, setRegularLeaveDays] = useState<string | null>(null);
   const [rewardLeaveLimit, setRewardLeaveLimit] = useState<string | null>(null);
+  const [overnightCycleWeeks, setOvernightCycleWeeks] = useState<string | null>(null);
+  const [overnightNights, setOvernightNights] = useState<string | null>(null);
+  const [overnightDays, setOvernightDays] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const { serviceStartDate = "", dischargeDate } = data.settings;
   const regularLeaveDaysValue = regularLeaveDays ?? String(data.settings.regularLeaveDays);
   const rewardLeaveLimitValue = rewardLeaveLimit ?? String(data.settings.rewardLeaveLimit);
+  const overnightCycleWeeksValue =
+    overnightCycleWeeks ?? String(data.settings.performanceOvernightCycleWeeks);
+  const overnightNightsValue =
+    overnightNights ?? String(data.settings.performanceOvernightNights);
+  const overnightDaysValue =
+    overnightDays ?? String(data.settings.performanceOvernightDays);
 
-  function updateDate(field: "serviceStartDate" | "dischargeDate", value: string) {
+  function updateDate(
+    field: "serviceStartDate" | "dischargeDate" | "performanceOvernightBaseDate",
+    value: string,
+  ) {
     if (value && !isValidDateString(value)) {
       setDateError("올바른 날짜를 입력해 주세요.");
       return;
     }
 
     setDateError("");
+    setOvernightError("");
     setIsSaved(false);
     setData((current) => ({
       ...current,
@@ -56,19 +70,44 @@ export default function SettingsPage() {
       return;
     }
 
+    const cycleWeeks = Number(overnightCycleWeeksValue);
+    const durationNights = Number(overnightNightsValue);
+    const durationDays = Number(overnightDaysValue);
+    if (
+      !overnightCycleWeeksValue.trim() ||
+      !overnightNightsValue.trim() ||
+      !overnightDaysValue.trim() ||
+      !Number.isInteger(cycleWeeks) ||
+      !Number.isInteger(durationNights) ||
+      !Number.isInteger(durationDays) ||
+      cycleWeeks < 1 ||
+      durationNights < 1 ||
+      durationDays < 1
+    ) {
+      setOvernightError("주기, 숙박, 기간은 1 이상의 정수로 입력해 주세요.");
+      return;
+    }
+
     setIsSaved(true);
     setDateError("");
     setLeaveError("");
+    setOvernightError("");
     setData((current) => ({
       ...current,
       settings: {
         ...current.settings,
         regularLeaveDays: regularDays,
         rewardLeaveLimit: rewardLimit,
+        performanceOvernightCycleWeeks: cycleWeeks,
+        performanceOvernightNights: durationNights,
+        performanceOvernightDays: durationDays,
       },
     }));
     setRegularLeaveDays(null);
     setRewardLeaveLimit(null);
+    setOvernightCycleWeeks(null);
+    setOvernightNights(null);
+    setOvernightDays(null);
   }
 
   return (
@@ -176,6 +215,76 @@ export default function SettingsPage() {
             <p role="alert" className="text-sm text-destructive">
               {leaveError}
             </p>
+          )}
+        </fieldset>
+
+        <fieldset className="space-y-5 border-t border-border pt-5">
+          <legend className="text-base font-semibold">성과제외박</legend>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label htmlFor="performanceOvernightCycleWeeks" className="space-y-2 text-sm font-medium">
+              주기 (주)
+              <input
+                id="performanceOvernightCycleWeeks"
+                type="number"
+                min="1"
+                step="1"
+                value={overnightCycleWeeksValue}
+                disabled={!isReady}
+                onChange={(event) => {
+                  setOvernightCycleWeeks(event.target.value);
+                  setIsSaved(false);
+                }}
+                className="h-12 w-full rounded-md border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              />
+            </label>
+            <label htmlFor="performanceOvernightNights" className="space-y-2 text-sm font-medium">
+              숙박 (박)
+              <input
+                id="performanceOvernightNights"
+                type="number"
+                min="1"
+                step="1"
+                value={overnightNightsValue}
+                disabled={!isReady}
+                onChange={(event) => {
+                  setOvernightNights(event.target.value);
+                  setIsSaved(false);
+                }}
+                className="h-12 w-full rounded-md border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              />
+            </label>
+            <label htmlFor="performanceOvernightDays" className="space-y-2 text-sm font-medium">
+              기간 (일)
+              <input
+                id="performanceOvernightDays"
+                type="number"
+                min="1"
+                step="1"
+                value={overnightDaysValue}
+                disabled={!isReady}
+                onChange={(event) => {
+                  setOvernightDays(event.target.value);
+                  setIsSaved(false);
+                }}
+                className="h-12 w-full rounded-md border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              />
+            </label>
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="performanceOvernightBaseDate" className="text-sm font-medium">
+              성과제외박 기준일
+            </label>
+            <input
+              id="performanceOvernightBaseDate"
+              type="date"
+              value={data.settings.performanceOvernightBaseDate ?? ""}
+              disabled={!isReady}
+              onChange={(event) => updateDate("performanceOvernightBaseDate", event.target.value)}
+              className="h-12 w-full rounded-md border border-input bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+            />
+          </div>
+          {overnightError && (
+            <p role="alert" className="text-sm text-destructive">{overnightError}</p>
           )}
         </fieldset>
 

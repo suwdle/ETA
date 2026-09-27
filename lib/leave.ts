@@ -1,3 +1,5 @@
+import { addWeeks, format, parseISO } from "date-fns";
+import { isValidDateString } from "@/lib/discharge";
 import type { RewardLeave } from "@/types";
 
 export function calculateRemainingLeave(
@@ -15,4 +17,19 @@ export function calculateRewardLeaveRemaining(
       total + calculateRemainingLeave(leave.grantedDays, leave.usedDays),
     0,
   );
+}
+
+export function calculateNextPerformanceOvernight(
+  baseDate: string,
+  cycleWeeks: number,
+): string | null {
+  if (
+    !isValidDateString(baseDate) ||
+    !Number.isInteger(cycleWeeks) ||
+    cycleWeeks <= 0
+  ) {
+    return null;
+  }
+
+  return format(addWeeks(parseISO(baseDate), cycleWeeks), "yyyy-MM-dd");
 }
