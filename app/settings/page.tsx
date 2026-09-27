@@ -132,8 +132,10 @@ export default function SettingsPage() {
     const link = document.createElement("a");
     link.href = url;
     link.download = `airplanner-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setBackupError("");
     setBackupStatus("백업 파일을 저장했습니다.");
   }
@@ -153,7 +155,7 @@ export default function SettingsPage() {
       setPendingBackupName(file.name);
       setConfirmation("import");
     } catch {
-      setBackupError("올바른 AirPlanner 백업 파일이 아닙니다.");
+      setBackupError("올바른 ETA 백업 파일이 아닙니다.");
     } finally {
       setIsReadingBackup(false);
     }
@@ -170,7 +172,7 @@ export default function SettingsPage() {
       setPendingBackupJson(null);
       setPendingBackupName("");
     } catch {
-      setBackupError("올바른 AirPlanner 백업 파일이 아닙니다.");
+      setBackupError("백업 파일을 복원하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.");
       setConfirmation(null);
     }
   }
@@ -407,7 +409,7 @@ export default function SettingsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <div>
               <h3 className="text-sm font-medium">데이터 복원</h3>
-              <p className="text-xs text-muted-foreground">AirPlanner JSON 백업 파일을 선택합니다.</p>
+              <p className="text-xs text-muted-foreground">ETA JSON 백업 파일을 선택합니다.</p>
             </div>
             <input
               ref={backupInputRef}

@@ -193,7 +193,7 @@ function readArray<T>(value: unknown, field: string, validator: Validator<T>): T
 
 function normalizeAppData(value: unknown): AppData {
   if (!isObject(value)) {
-    throw new Error("올바른 AirPlanner 데이터 형식이 아닙니다.");
+    throw new Error("올바른 ETA 데이터 형식이 아닙니다.");
   }
 
   const leaves = readArray(value.leaves, "휴가", isLeave);
@@ -256,7 +256,7 @@ export function parseAppDataBackup(json: string): AppData {
     if (!isAppDataBackup(parsed)) throw new Error("Invalid backup structure");
     return normalizeAppData(parsed);
   } catch {
-    throw new Error("올바른 AirPlanner 백업 파일이 아닙니다.");
+    throw new Error("올바른 ETA 백업 파일이 아닙니다.");
   }
 }
 

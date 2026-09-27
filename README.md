@@ -1,5 +1,5 @@
 # ETA
-## Essential TimeTable for Airforce
+## Essential Timetable for Airforce
 
 공군 병사를 위한 개인용 휴가·외박·일정 관리 웹앱.
 
@@ -70,7 +70,7 @@ airplanner-data
 ```text
 Export JSON
     ↓
-eta-backup-YYYY-MM-DD.json
+airplanner-backup-YYYY-MM-DD.json
 ```
 
 필요할 경우 다시 JSON을 가져올 수 있다.
@@ -85,6 +85,8 @@ app/
 ├── page.tsx
 ├── calendar/
 │   └── page.tsx
+├── events/
+│   └── page.tsx
 ├── leave/
 │   └── page.tsx
 └── settings/
@@ -98,9 +100,10 @@ components/
 └── ui/
 
 lib/
+├── calendar.ts
 ├── date.ts
 ├── discharge.ts
-├── event.ts
+├── events.ts
 ├── leave.ts
 ├── storage.ts
 └── validation.ts
@@ -126,6 +129,14 @@ npm run dev
 ```text
 http://localhost:3000
 ```
+
+---
+
+# Vercel 배포
+
+GitHub 저장소를 Vercel에서 가져오면 Next.js 프로젝트로 자동 감지된다. 별도의 환경 변수나 `vercel.json`은 필요하지 않으며, Build Command는 `npm run build`를 사용한다.
+
+앱 데이터는 서버가 아닌 각 브라우저의 `localStorage`에 저장된다. 다른 기기나 브라우저로 데이터를 옮길 때는 설정의 JSON 백업/복원을 사용한다.
 
 ---
 

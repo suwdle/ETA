@@ -22,8 +22,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Plus,
   Umbrella,
 } from "lucide-react";
+import Link from "next/link";
 import { useAppData } from "@/hooks/use-app-data";
 import { calculatePerformanceOvernightDates } from "@/lib/calendar";
 import { isValidDateString } from "@/lib/discharge";
@@ -299,7 +301,15 @@ export default function CalendarPage() {
         {!isReady ? (
           <p className="py-5 text-center text-sm text-muted-foreground">일정을 불러오는 중입니다.</p>
         ) : selectedDateEvents.length === 0 ? (
-          <p className="py-5 text-center text-sm text-muted-foreground">등록된 일정이 없습니다.</p>
+          <div className="flex flex-col items-center gap-3 py-5 text-center">
+            <p className="text-sm text-muted-foreground">등록된 일정이 없습니다.</p>
+            <Link
+              href="/events"
+              className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
+            >
+              <Plus aria-hidden="true" className="size-4" /> 일정 추가
+            </Link>
+          </div>
         ) : (
           <ul className="mt-2 divide-y divide-border">
             {selectedDateEvents.map((event) => {

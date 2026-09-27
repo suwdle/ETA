@@ -6,8 +6,8 @@ import { AppDataProvider } from "@/hooks/use-app-data";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AirPlanner | 공군 개인 플래너",
-  description: "공군 병사를 위한 개인 휴가 및 일정 관리 플래너",
+  title: "ETA | Essential Timetable for Airforce",
+  description: "ETA는 공군 병사를 위한 개인 휴가 및 일정 관리 플래너입니다.",
 };
 
 export const viewport: Viewport = {
@@ -26,8 +26,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                 <Plane aria-hidden="true" className="size-5" />
               </span>
               <div>
-                <p className="text-sm font-semibold leading-5">AirPlanner</p>
-                <p className="text-xs text-muted-foreground">개인 일정 관리</p>
+                <p className="text-sm font-semibold leading-5">ETA</p>
+                <p className="text-xs text-muted-foreground">Essential Timetable for Airforce</p>
               </div>
             </div>
           </header>
